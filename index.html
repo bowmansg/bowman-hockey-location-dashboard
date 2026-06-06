@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bowman Hockey Location Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #d9dee7;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+      --will: #f2c94c;
+      --will-dark: #8a6500;
+
+      --cam: #0057b8;
+      --cam-dark: #003a7a;
+
+      --graycen: #39ff14;
+      --graycen-dark: #178500;
+
+      --oilers: #ff4c00;
+      --oilers-dark: #00205b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #111827, #263246);
+      color: white;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: #d7dde8;
+      font-size: 15px;
+    }
+
+    .updated {
+      text-align: right;
+      font-size: 12px;
+      color: #c9d1df;
+      white-space: nowrap;
+      margin-top: 4px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      padding: 8px 0;
+    }
+
+    .tab {
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .tab.active {
+      background: #111827;
+      color: white;
+      border-color: #111827;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .control-btn {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .month-label {
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .weekend-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: white;
+    }
+
+    .weekend-header {
+      padding: 12px 14px;
+      background: #111827;
+      color: white;
+      font-weight: 900;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .weekend-body {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .person-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .person-name {
+      border-radius: 12px;
+      padding: 10px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #111827;
+    }
+
+    .person-name.will { background: var(--will); }
+    .person-name.cam { background: #d9e8ff; color: var(--cam-dark); border: 1px solid #a9c8f5; }
+    .person-name.graycen { background: #d8ffd2; color: var(--graycen-dark); border: 1px solid #94f286; }
+    .person-name.oilers { background: #ffe1d4; color: var(--oilers-dark); border: 1px solid #ffb08c; }
+
+    .location-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fbfcfe;
+      min-height: 48px;
+    }
+
+    .location-box.empty {
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+    }
+
+    .event-title {
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .event-meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #eef2f7;
+    }
+
+    .chip.will { background: var(--will); color: #1f2937; }
+    .chip.cam { background: var(--cam); color: white; }
+    .chip.graycen { background: var(--graycen); color: #102a12; }
+    .chip.oilers { background: var(--oilers); color: white; }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .dow {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      padding: 6px 0;
+    }
+
+    .day {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-height: 112px;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .day.muted {
+      opacity: 0.35;
+    }
+
+    .day-num {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .cal-event {
+      font-size: 11px;
+      line-height: 1.2;
+      border-radius: 8px;
+      padding: 4px 5px;
+      margin-bottom: 4px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cal-event.will { background: var(--will); color: #1f2937; }
+    .cal-event.cam { background: var(--cam); color: white; }
+    .cal-event.graycen { background: var(--graycen); color: #102a12; }
+    .cal-event.oilers { background: var(--oilers); color: white; }
+
+    .list-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #fbfcfe;
+      border-left-width: 8px;
+    }
+
+    .list-item.will { border-left-color: var(--will); }
+    .list-item.cam { border-left-color: var(--cam); }
+    .list-item.graycen { border-left-color: var(--graycen); }
+    .list-item.oilers { border-left-color: var(--oilers); }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbfcfe;
+      margin-bottom: 8px;
+    }
+
+    .swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.15);
+      flex: 0 0 auto;
+    }
+
+    .swatch.will { background: var(--will); }
+    .swatch.cam { background: var(--cam); }
+    .swatch.graycen { background: var(--graycen); }
+    .swatch.oilers { background: var(--oilers); }
+
+    .loading, .error {
+      padding: 18px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .error {
+      border-color: #f5b5b5;
+      background: #fff7f7;
+      color: #8a1f1f;
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        padding: 10px;
+      }
+
+      .hero {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .hero-top {
+        display: block;
+      }
+
+      .updated {
+        text-align: left;
+        margin-top: 10px;
+      }
+
+      .hero h1 {
+        font-size: 24px;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .tab {
+        font-size: 12px;
+        padding: 9px 5px;
+      }
+
+      .person-row {
+        grid-template-columns: 76px 1fr;
+      }
+
+      .calendar {
+        gap: 4px;
+      }
+
+      .day {
+        min-height: 88px;
+        padding: 5px;
+        border-radius: 9px;
+      }
+
+      .cal-event {
+        font-size: 9.5px;
+        padding: 3px 4px;
+      }
+
+      .grid-two {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>Bowman Hockey Location Dashboard</h1>
+          <p>Where everyone is by weekend, month, and location.</p>
+        </div>
+        <div class="updated" id="updated">Loading…</div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-view="weekend">Weekend</button>
+      <button class="tab" data-view="month">Month</button>
+      <button class="tab" data-view="locations">Locations</button>
+      <button class="tab" data-view="opportunities">Opps</button>
+      <button class="tab" data-view="list">List</button>
+    </nav>
+
+    <main id="content">
+      <div class="loading">Loading schedule data…</div>
+    </main>
+  </div>
+
+  <script>
+    const DATA_URL = "https://script.google.com/macros/s/AKfycbwntJkTzsE464tTYW3zeF0hepWvsN1AxS8kos05Ho_KELT0uFfNzP5qTnPdKWzulHFf/exec";
+
+    const PEOPLE = ["Will", "Cam", "Graycen", "Oilers"];
+
+    const PERSON_META = {
+      Will: { key: "will", team: "Adrian", label: "Will / Adrian" },
+      Cam: { key: "cam", team: "URI", label: "Cam / URI" },
+      Graycen: { key: "graycen", team: "Mission", label: "Graycen / Mission" },
+      Oilers: { key: "oilers", team: "Oilers", label: "Oilers" }
+    };
+
+    let events = [];
+    let activeMonth = new Date(2026, 8, 1);
+
+    const content = document.getElementById("content");
+    const updated = document.getElementById("updated");
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        render(btn.dataset.view);
+      });
+    });
+
+    function parseDate(dateStr) {
+      const parts = dateStr.split("-").map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function fmtDate(date) {
+      return date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function fmtFullDate(date) {
+      return date.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function fmtRange(start, end) {
+      if (start.toDateString() === end.toDateString()) return fmtFullDate(start);
+
+      const sameMonth = start.getMonth() === end.getMonth();
+      const sameYear = start.getFullYear() === end.getFullYear();
+
+      if (sameMonth && sameYear) {
+        return `${start.toLocaleDateString(undefined, { month: "short" })} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
+      }
+
+      return `${fmtDate(start)} – ${fmtDate(end)}, ${end.getFullYear()}`;
+    }
+
+    function eventOverlapsDate(ev, date) {
+      const s = parseDate(ev.startDate);
+      const e = parseDate(ev.endDate || ev.startDate);
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return d >= s && d <= e;
+    }
+
+    function eventOverlapsRange(ev, start, end) {
+      const s = parseDate(ev.startDate);
+      const e = parseDate(ev.endDate || ev.startDate);
+      return s <= end && e >= start;
+    }
+
+    function getPersonKey(ev) {
+      return (ev.colorKey || ev.person || "").toLowerCase();
+    }
+
+    function eventLine(ev) {
+      const status = ev.status ? `${ev.status}` : "";
+      const city = ev.city ? `${ev.city}` : "";
+      const label = ev.label ? `${ev.label}` : "";
+      return [status, city, label].filter(Boolean).join(" — ");
+    }
+
+    function getSeasonStart() {
+      if (!events.length) return new Date();
+      return events.reduce((min, ev) => {
+        const d = parseDate(ev.startDate);
+        return d < min ? d : min;
+      }, parseDate(events[0].startDate));
+    }
+
+    function getSeasonEnd() {
+      if (!events.length) return new Date();
+      return events.reduce((max, ev) => {
+        const d = parseDate(ev.endDate || ev.startDate);
+        return d > max ? d : max;
+      }, parseDate(events[0].endDate || events[0].startDate));
+    }
+
+    function getWeekendRanges() {
+      const min = getSeasonStart();
+      const max = getSeasonEnd();
+
+      const start = new Date(min);
+      start.setDate(start.getDate() - ((start.getDay() + 1) % 7)); // Friday-ish anchor
+
+      const ranges = [];
+      let d = new Date(start);
+
+      while (d <= max) {
+        const fri = new Date(d);
+        const sun = new Date(d);
+        sun.setDate(fri.getDate() + 2);
+
+        const hasEvent = events.some(ev => eventOverlapsRange(ev, fri, sun));
+        if (hasEvent) ranges.push({ start: fri, end: sun });
+
+        d.setDate(d.getDate() + 7);
+      }
+
+      return ranges;
+    }
+
+    function render(view) {
+      if (view === "weekend") renderWeekend();
+      if (view === "month") renderMonth();
+      if (view === "locations") renderLocations();
+      if (view === "opportunities") renderOpportunities();
+      if (view === "list") renderList();
+    }
+
+    function renderWeekend() {
+      const ranges = getWeekendRanges();
+
+      content.innerHTML = `
+        <section class="view active">
+          <div class="card">
+            <h2 class="section-title">Weekend View</h2>
+            <div class="small">Default view: where everyone is each weekend.</div>
+          </div>
+          ${ranges.map(range => {
+            const weekendEvents = events.filter(ev => eventOverlapsRange(ev, range.start, range.end));
+            const count = weekendEvents.length;
+
+            return `
+              <div class="weekend-card">
+                <div class="weekend-header">
+                  <div>${fmtRange(range.start, range.end)}</div>
+                  <div>${count} item${count === 1 ? "" : "s"}</div>
+                </div>
+                <div class="weekend-body">
+                  ${PEOPLE.map(person => {
+                    const personEvents = weekendEvents.filter(ev => ev.person === person);
+                    const key = PERSON_META[person].key;
+
+                    return `
+                      <div class="person-row">
+                        <div class="person-name ${key}">${person}</div>
+                        <div class="location-box ${personEvents.length ? "" : "empty"}">
+                          ${
+                            personEvents.length
+                              ? personEvents.map(ev => `
+                                  <div>
+                                    <div class="event-title">${eventLine(ev)}</div>
+                                    ${ev.notes ? `<div class="event-meta">${ev.notes}</div>` : ""}
+                                  </div>
+                                `).join("")
+                              : "No scheduled location"
+                          }
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </section>
+      `;
+    }
+
+    function renderMonth() {
+      const year = activeMonth.getFullYear();
+      const month = activeMonth.getMonth();
+
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month + 1, 0);
+      const start = new Date(first);
+      start.setDate(first.getDate() - first.getDay());
+
+      const days = [];
+      const cur = new Date(start);
+
+      for (let i = 0; i < 42; i++) {
+        days.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      content.innerHTML = `
+        <section class="view active">
+          <div class="card">
+            <div class="controls">
+              <button class="control-btn" id="prevMonth">‹</button>
+              <div class="month-label">${activeMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</div>
+              <button class="control-btn" id="nextMonth">›</button>
+            </div>
+            <div class="calendar">
+              ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => `<div class="dow">${d}</div>`).join("")}
+              ${days.map(day => {
+                const dayEvents = events.filter(ev => eventOverlapsDate(ev, day));
+                const muted = day.getMonth() !== month ? "muted" : "";
+
+                return `
+                  <div class="day ${muted}">
+                    <div class="day-num">${day.getDate()}</div>
+                    ${dayEvents.map(ev => `
+                      <div class="cal-event ${getPersonKey(ev)}">
+                        ${ev.person}: ${ev.city || ev.status || ev.label}
+                      </div>
+                    `).join("")}
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        </section>
+      `;
+
+      document.getElementById("prevMonth").addEventListener("click", () => {
+        activeMonth = new Date(year, month - 1, 1);
+        renderMonth();
+      });
+
+      document.getElementById("nextMonth").addEventListener("click", () => {
+        activeMonth = new Date(year, month + 1, 1);
+        renderMonth();
+      });
+    }
+
+    function renderLocations() {
+      const byCity = {};
+
+      events.forEach(ev => {
+        const city = ev.city || "TBD";
+        if (!byCity[city]) byCity[city] = [];
+        byCity[city].push(ev);
+      });
+
+      const cities = Object.keys(byCity).sort();
+
+      content.innerHTML = `
+        <section class="view active">
+          <div class="card">
+            <h2 class="section-title">Locations</h2>
+            <div class="small">Grouped by city/location so you can quickly see travel clusters.</div>
+          </div>
+          ${cities.map(city => `
+            <div class="card">
+              <h3 class="section-title">${city}</h3>
+              ${byCity[city]
+                .sort((a,b) => parseDate(a.startDate) - parseDate(b.startDate))
+                .map(ev => `
+                  <div class="list-item ${getPersonKey(ev)}">
+                    <div class="event-title">${ev.person} — ${ev.label}</div>
+                    <div class="event-meta">${fmtRange(parseDate(ev.startDate), parseDate(ev.endDate || ev.startDate))} · ${ev.status}</div>
+                    ${ev.notes ? `<div class="event-meta">${ev.notes}</div>` : ""}
+                  </div>
+                `).join("")}
+            </div>
+          `).join("")}
+        </section>
+      `;
+    }
+
+    function renderOpportunities() {
+      const ranges = getWeekendRanges();
+
+      const rows = ranges.map(range => {
+        const weekendEvents = events.filter(ev => eventOverlapsRange(ev, range.start, range.end));
+        const peopleHere = [...new Set(weekendEvents.map(ev => ev.person))];
+
+        let note = "";
+        if (peopleHere.length >= 2) {
+          note = "Multiple family schedules active this weekend.";
+        } else if (peopleHere.length === 1) {
+          note = `${peopleHere[0]} has a scheduled location.`;
+        } else {
+          note = "Open weekend.";
+        }
+
+        return { range, weekendEvents, peopleHere, note };
+      });
+
+      content.innerHTML = `
+        <section class="view active">
+          <div class="card">
+            <h2 class="section-title">Opportunities</h2>
+            <div class="small">
+              This will become more powerful after the Oilers schedule is added. For now, it flags weekends with multiple family schedule items.
+            </div>
+          </div>
+
+          ${rows.map(row => `
+            <div class="card">
+              <h3 class="section-title">${fmtRange(row.range.start, row.range.end)}</h3>
+              <div class="small">${row.note}</div>
+              <div class="chips">
+                ${row.weekendEvents.map(ev => `
+                  <span class="chip ${getPersonKey(ev)}">${ev.person}: ${ev.city || ev.status}</span>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </section>
+      `;
+    }
+
+    function renderList() {
+      const sorted = [...events].sort((a,b) => parseDate(a.startDate) - parseDate(b.startDate));
+
+      content.innerHTML = `
+        <section class="view active">
+          <div class="card">
+            <h2 class="section-title">Full List</h2>
+            <div class="small">Chronological list of all location blocks.</div>
+          </div>
+
+          ${sorted.map(ev => `
+            <div class="list-item ${getPersonKey(ev)}">
+              <div class="event-title">${ev.person} — ${ev.label}</div>
+              <div class="event-meta">${fmtRange(parseDate(ev.startDate), parseDate(ev.endDate || ev.startDate))}</div>
+              <div class="event-meta">${ev.status} · ${ev.city}</div>
+              ${ev.notes ? `<div class="event-meta">${ev.notes}</div>` : ""}
+            </div>
+          `).join("")}
+
+          <div class="card">
+            <h2 class="section-title">Legend</h2>
+            <div class="legend-item"><span class="swatch will"></span><strong>Will / Adrian</strong></div>
+            <div class="legend-item"><span class="swatch cam"></span><strong>Cam / URI</strong></div>
+            <div class="legend-item"><span class="swatch graycen"></span><strong>Graycen / Mission</strong></div>
+            <div class="legend-item"><span class="swatch oilers"></span><strong>Oilers — to be added later</strong></div>
+          </div>
+        </section>
+      `;
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(DATA_URL);
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Unknown data error");
+        }
+
+        events = data.events || [];
+        activeMonth = new Date(getSeasonStart().getFullYear(), getSeasonStart().getMonth(), 1);
+
+        updated.textContent = `${events.length} items · Updated ${new Date(data.updatedAt).toLocaleString()}`;
+        renderWeekend();
+
+      } catch (err) {
+        content.innerHTML = `
+          <div class="error">
+            <strong>Could not load schedule data.</strong>
+            <div style="margin-top: 8px;">${err.message}</div>
+            <div style="margin-top: 8px; font-size: 13px;">
+              Check that the Apps Script deployment is public and that the Web App URL is correct.
+            </div>
+          </div>
+        `;
+        updated.textContent = "Data error";
+      }
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
